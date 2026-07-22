@@ -5,15 +5,25 @@ from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
-# Load the pickle model safely
-MODEL_PATH = "logistic_regrassion_model.pkl"
+# Dynamically find the absolute path of the current directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Change "model (3).pkl" here if your uploaded file has a different exact name
+MODEL_PATH = os.path.join(BASE_DIR, "model (3).pkl")
+
+# Load the pickle model safely with fallback logging
 if os.path.exists(MODEL_PATH):
-    with open(MODEL_PATH, "rb") as f:
-        model = pickle.load(f)
+    try:
+        with open(MODEL_PATH, "rb") as f:
+            model = pickle.load(f)
+        print("--> Model loaded successfully!")
+    except Exception as e:
+        print(f"--> Error loading model file: {e}")
+        model = None
 else:
+    print(f"--> Critical Error: Model file not found at {MODEL_PATH}")
     model = None
 
-# HTML Template with CSS Styles and Animations included
+# HTML Template with CSS Styles and Animations
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -74,7 +84,7 @@ HTML_TEMPLATE = """
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(2, 150px);
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
             justify-content: center;
         }
@@ -176,8 +186,13 @@ HTML_TEMPLATE = """
             border: 1px solid #2ed573;
             color: #2ed573;
         }
+        
+        .danger {
+            background: rgba(235, 77, 75, 0.2);
+            border: 1px solid #eb4d4b;
+            color: #eb4d4b;
+        }
 
-        /* Animations */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -281,11 +296,16 @@ HTML_TEMPLATE = """
             });
             const result = await response.json();
             
-            resultDiv.innerText = result.error ? `Error: ${result.error}` : `Prediction Output: ${result.prediction}`;
-            resultDiv.classList.add('success', 'show-result');
+            if (result.error) {
+                resultDiv.innerText = `Error: ${result.error}`;
+                resultDiv.classList.add('danger', 'show-result');
+            } else {
+                resultDiv.innerText = `Prediction Output: ${result.prediction}`;
+                resultDiv.classList.add('success', 'show-result');
+            }
         } catch (error) {
             resultDiv.innerText = "Error connecting to server.";
-            resultDiv.classList.add('show-result');
+            resultDiv.classList.add('danger', 'show-result');
         }
     });
 </script>
@@ -299,12 +319,11 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    if not model:
-        return jsonify({"error": "Model file not found on server."}), 500
+    if model is None:
+        return jsonify({"error": f"Model file not found on server. Looking for: {os.path.basename(MODEL_PATH)}"}), 500
     
     try:
         data = request.json
-        # Convert incoming data to float in exact order matching feature_names_in_
         features = [
             float(data['Education']),
             float(data['JoiningYear']),
