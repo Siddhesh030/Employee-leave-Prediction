@@ -7,7 +7,6 @@ app = Flask(__name__)
 
 # robust paths resolver for Vercel's environment
 def load_model():
-    # Potential locations for the model file in Vercel environment
     possible_paths = [
         os.path.join(os.getcwd(), "lrmodel.pkl"),
         os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lrmodel.pkl"),
@@ -23,12 +22,11 @@ def load_model():
             except Exception as e:
                 return None, f"Failed to parse model file: {str(e)}"
     
-    # If not found, return the path checked for debugging
     return None, f"Model file not found. Checked paths: {', '.join(possible_paths)}"
 
 model, model_error = load_model()
 
-# Elegant Glassmorphism Interface with Enhanced Theme & Smooth Micro-interactions
+# Advanced Glassmorphism Interface with Live Data Visualization
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -36,6 +34,8 @@ HTML_TEMPLATE = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Predictive Analytics Dashboard</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-gradient: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%);
@@ -73,7 +73,7 @@ HTML_TEMPLATE = """
             padding: 48px;
             border-radius: 28px;
             width: 100%;
-            max-width: 720px;
+            max-width: 960px; /* Widened to fit the dashboard layout side-by-side */
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             animation: slideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -98,18 +98,29 @@ HTML_TEMPLATE = """
             font-size: 0.95rem;
         }
 
+        /* Responsive Dashboard Layout Split */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 40px;
+            align-items: start;
+        }
+
+        @media (max-width: 868px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 28px;
+            gap: 24px;
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 480px) {
             .grid {
                 grid-template-columns: 1fr;
-            }
-            .container {
-                padding: 32px 24px;
             }
         }
 
@@ -170,7 +181,7 @@ HTML_TEMPLATE = """
             margin-top: 12px;
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 480px) {
             .btn-container {
                 grid-column: span 1;
             }
@@ -178,7 +189,6 @@ HTML_TEMPLATE = """
 
         button {
             width: 100%;
-            max-width: 320px;
             padding: 16px 32px;
             border: none;
             border-radius: 14px;
@@ -197,16 +207,32 @@ HTML_TEMPLATE = """
             filter: brightness(1.05);
         }
 
-        button:active {
-            transform: translateY(0);
+        /* Visualization Panel styling */
+        .visualization-panel {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 360px;
+        }
+
+        .chart-placeholder {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            text-align: center;
         }
 
         #result {
-            margin-top: 32px;
-            padding: 20px;
-            border-radius: 16px;
+            width: 100%;
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 12px;
             text-align: center;
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: 600;
             display: none;
             opacity: 0;
@@ -224,25 +250,17 @@ HTML_TEMPLATE = """
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.25);
             color: #34d399;
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.05);
         }
         
         .danger {
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.25);
             color: #f87171;
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.05);
         }
 
         @keyframes slideUpFade {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -250,82 +268,97 @@ HTML_TEMPLATE = """
 
 <div class="container">
     <div class="header-section">
-        <h2>Predictive Dashboard</h2>
-        <div class="subtitle">Input system variables below to evaluate model metrics</div>
+        <h2>Predictive Analytics Engine</h2>
+        <div class="subtitle">Evaluate data distribution vectors and operational outputs in real-time</div>
     </div>
     
-    <form id="predictionForm">
-        <div class="grid">
-            <div class="input-group">
-                <label for="Education">Education</label>
-                <select id="Education" name="Education" required>
-                    <option value="0">Bachelors</option>
-                    <option value="1">Masters</option>
-                    <option value="2">PHD</option>
-                </select>
-            </div>
-            
-            <div class="input-group">
-                <label for="JoiningYear">Joining Year</label>
-                <input type="number" id="JoiningYear" name="JoiningYear" value="2026" required>
-            </div>
+    <div class="dashboard-layout">
+        <!-- Form Section -->
+        <form id="predictionForm">
+            <div class="grid">
+                <div class="input-group">
+                    <label for="Education">Education</label>
+                    <select id="Education" name="Education" required>
+                        <option value="0">Bachelors</option>
+                        <option value="1">Masters</option>
+                        <option value="2">PHD</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="JoiningYear">Joining Year</label>
+                    <input type="number" id="JoiningYear" name="JoiningYear" value="2026" required>
+                </div>
 
-            <div class="input-group">
-                <label for="City">City</label>
-                <select id="City" name="City" required>
-                    <option value="0">Bangalore</option>
-                    <option value="1">Pune</option>
-                    <option value="2">New Delhi</option>
-                </select>
-            </div>
+                <div class="input-group">
+                    <label for="City">City</label>
+                    <select id="City" name="City" required>
+                        <option value="0">Bangalore</option>
+                        <option value="1">Pune</option>
+                        <option value="2">New Delhi</option>
+                    </select>
+                </div>
 
-            <div class="input-group">
-                <label for="PaymentTier">Payment Tier (1-3)</label>
-                <input type="number" id="PaymentTier" name="PaymentTier" min="1" max="3" value="3" required>
-            </div>
+                <div class="input-group">
+                    <label for="PaymentTier">Payment Tier</label>
+                    <input type="number" id="PaymentTier" name="PaymentTier" min="1" max="3" value="3" required>
+                </div>
 
-            <div class="input-group">
-                <label for="Age">Age</label>
-                <input type="number" id="Age" name="Age" min="18" max="100" value="25" required>
-            </div>
+                <div class="input-group">
+                    <label for="Age">Age</label>
+                    <input type="number" id="Age" name="Age" min="18" max="100" value="25" required>
+                </div>
 
-            <div class="input-group">
-                <label for="Gender">Gender</label>
-                <select id="Gender" name="Gender" required>
-                    <option value="0">Female</option>
-                    <option value="1">Male</option>
-                </select>
-            </div>
+                <div class="input-group">
+                    <label for="Gender">Gender</label>
+                    <select id="Gender" name="Gender" required>
+                        <option value="0">Female</option>
+                        <option value="1">Male</option>
+                    </select>
+                </div>
 
-            <div class="input-group">
-                <label for="EverBenched">Ever Benched</label>
-                <select id="EverBenched" name="EverBenched" required>
-                    <option value="0">No</option>
-                    <option value="1">Yes</option>
-                </select>
-            </div>
+                <div class="input-group">
+                    <label for="EverBenched">Ever Benched</label>
+                    <select id="EverBenched" name="EverBenched" required>
+                        <option value="0">No</option>
+                        <option value="1">Yes</option>
+                    </select>
+                </div>
 
-            <div class="input-group">
-                <label for="ExperienceInCurrentDomain">Domain Experience (Years)</label>
-                <input type="number" id="ExperienceInCurrentDomain" name="ExperienceInCurrentDomain" min="0" value="2" required>
-            </div>
+                <div class="input-group">
+                    <label for="ExperienceInCurrentDomain">Domain Exp (Yrs)</label>
+                    <input type="number" id="ExperienceInCurrentDomain" name="ExperienceInCurrentDomain" min="0" value="2" required>
+                </div>
 
-            <div class="btn-container">
-                <button type="submit">Execute Prediction</button>
+                <div class="btn-container">
+                    <button type="submit">Execute Prediction</button>
+                </div>
             </div>
+        </form>
+
+        <!-- Visualization Section -->
+        <div class="visualization-panel">
+            <div id="placeholderText" class="chart-placeholder">
+                Submit inputs to generate feature metric visualization mapping.
+            </div>
+            <canvas id="metricsChart" style="display: none; max-width: 100%; max-height: 280px;"></canvas>
+            <div id="result"></div>
         </div>
-    </form>
-
-    <div id="result"></div>
+    </div>
 </div>
 
 <script>
+    let currentChart = null;
+
     document.getElementById('predictionForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
         
         const resultDiv = document.getElementById('result');
+        const placeholderText = document.getElementById('placeholderText');
+        const chartCanvas = document.getElementById('metricsChart');
+        
         resultDiv.className = ''; 
         resultDiv.classList.remove('show-result');
 
@@ -343,9 +376,58 @@ HTML_TEMPLATE = """
             } else {
                 resultDiv.innerText = `Prediction Output Matrix: ${result.prediction}`;
                 resultDiv.classList.add('success', 'show-result');
+                
+                // Hide prompt text, show canvas element
+                placeholderText.style.display = 'none';
+                chartCanvas.style.display = 'block';
+
+                // Map form metrics safely to normalize on chart canvas scale
+                const chartDataVector = [
+                    (parseFloat(data.Education) + 1) * 3, 
+                    parseFloat(data.PaymentTier) * 3,
+                    (parseFloat(data.Age) / 10),
+                    (parseFloat(data.ExperienceInCurrentDomain) * 2),
+                    (parseFloat(data.EverBenched) + 1) * 4
+                ];
+
+                // Render or clear/re-render standard analytics chart matrix
+                if (currentChart) {
+                    currentChart.destroy();
+                }
+
+                currentChart = new Chart(chartCanvas, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Education Factor', 'Payment Weight', 'Age Multiplier', 'Domain Depth', 'Bench Status'],
+                        datasets: [{
+                            label: `Input Profile Vectors (Prediction: ${result.prediction})`,
+                            data: chartDataVector,
+                            fill: true,
+                            backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                            borderColor: '#38bdf8',
+                            pointBackgroundColor: '#38bdf8',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: '#38bdf8'
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            r: {
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                                pointLabels: { color: '#94a3b8', font: { size: 10 } },
+                                ticks: { display: false }
+                            }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#f8fafc', font: { size: 11 } } }
+                        }
+                    }
+                });
             }
         } catch (error) {
-            resultDiv.innerText = "Network failure: Unable to connect to inference server.";
+            resultDiv.innerText = "Network failure: Unable to connect to server context.";
             resultDiv.classList.add('danger', 'show-result');
         }
     });
