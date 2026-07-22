@@ -28,7 +28,7 @@ def load_model():
 
 model, model_error = load_model()
 
-# Elegant Glassmorphism Interface with Animations
+# Elegant Glassmorphism Interface with Enhanced Theme & Smooth Micro-interactions
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -38,108 +38,139 @@ HTML_TEMPLATE = """
     <title>Predictive Analytics Dashboard</title>
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            --card-bg: rgba(255, 255, 255, 0.06);
+            --bg-gradient: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%);
+            --card-bg: rgba(30, 41, 59, 0.4);
             --card-border: rgba(255, 255, 255, 0.08);
-            --text-color: #f1f5f9;
-            --accent-color: #00f2fe;
-            --accent-gradient: linear-gradient(45deg, #00c6ff, #0072ff);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.3);
+            --btn-gradient: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
 
         body {
             background: var(--bg-gradient);
-            color: var(--text-color);
+            color: var(--text-primary);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 24px;
+            padding: 40px 20px;
         }
 
         .container {
             background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--card-border);
-            padding: 40px;
-            border-radius: 24px;
+            padding: 48px;
+            border-radius: 28px;
             width: 100%;
-            max-width: 680px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-            animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            max-width: 720px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
         }
 
         h2 {
-            text-align: center;
-            margin-bottom: 32px;
-            font-size: 1.8rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            background: linear-gradient(45deg, #e0f2fe, #38bdf8);
+            font-size: 2.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #ffffff, #cbd5e1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
+            gap: 28px;
         }
 
-        @media (max-width: 580px) {
+        @media (max-width: 640px) {
             .grid {
                 grid-template-columns: 1fr;
+            }
+            .container {
+                padding: 32px 24px;
             }
         }
 
         .input-group {
             display: flex;
             flex-direction: column;
+            gap: 8px;
         }
 
         label {
             font-size: 0.85rem;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            transition: color 0.2s ease;
+        }
+
+        .input-group:focus-within label {
+            color: var(--accent);
         }
 
         input, select {
-            padding: 12px 16px;
-            background: rgba(15, 32, 39, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
             color: #fff;
-            font-size: 0.95rem;
-            transition: all 0.25s ease;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             outline: none;
+            width: 100%;
         }
 
         input:focus, select:focus {
-            border-color: #38bdf8;
-            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
-            background: rgba(15, 32, 39, 0.7);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 16px;
+            padding-right: 40px;
         }
 
         select option {
-            background: #1e293b;
+            background: #0f172a;
             color: #fff;
         }
 
         .btn-container {
             grid-column: span 2;
             text-align: center;
-            margin-top: 16px;
+            margin-top: 12px;
         }
 
-        @media (max-width: 580px) {
+        @media (max-width: 640px) {
             .btn-container {
                 grid-column: span 1;
             }
@@ -147,22 +178,23 @@ HTML_TEMPLATE = """
 
         button {
             width: 100%;
-            max-width: 280px;
-            padding: 14px 28px;
+            max-width: 320px;
+            padding: 16px 32px;
             border: none;
-            border-radius: 50px;
-            background: var(--accent-gradient);
+            border-radius: 14px;
+            background: var(--btn-gradient);
             color: #fff;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0, 114, 255, 0.3);
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 20px rgba(2, 132, 199, 0.4);
         }
 
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 24px rgba(0, 114, 255, 0.5);
+            box-shadow: 0 8px 28px rgba(2, 132, 199, 0.6);
+            filter: brightness(1.05);
         }
 
         button:active {
@@ -170,53 +202,58 @@ HTML_TEMPLATE = """
         }
 
         #result {
-            margin-top: 24px;
-            padding: 16px;
-            border-radius: 12px;
+            margin-top: 32px;
+            padding: 20px;
+            border-radius: 16px;
             text-align: center;
-            font-size: 1.1rem;
+            font-size: 1.15rem;
             font-weight: 600;
             display: none;
             opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
         }
 
         .show-result {
             display: block !important;
-            animation: fadeIn 0.4s forwards;
+            opacity: 1 !important;
+            transform: translateY(0) !important;
         }
 
         .success {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.4);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
             color: #34d399;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.05);
         }
         
         .danger {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
             color: #f87171;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.05);
         }
 
-        @keyframes fadeInScale {
+        @keyframes slideUpFade {
             from {
                 opacity: 0;
-                transform: scale(0.96) translateY(10px);
+                transform: translateY(20px);
             }
             to {
                 opacity: 1;
-                transform: scale(1) translateY(0);
+                transform: translateY(0);
             }
-        }
-
-        @keyframes fadeIn {
-            to { opacity: 1; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Predictive Model Dashboard</h2>
+    <div class="header-section">
+        <h2>Predictive Dashboard</h2>
+        <div class="subtitle">Input system variables below to evaluate model metrics</div>
+    </div>
+    
     <form id="predictionForm">
         <div class="grid">
             <div class="input-group">
@@ -269,12 +306,12 @@ HTML_TEMPLATE = """
             </div>
 
             <div class="input-group">
-                <label for="ExperienceInCurrentDomain">Experience in Domain (Years)</label>
+                <label for="ExperienceInCurrentDomain">Domain Experience (Years)</label>
                 <input type="number" id="ExperienceInCurrentDomain" name="ExperienceInCurrentDomain" min="0" value="2" required>
             </div>
 
             <div class="btn-container">
-                <button type="submit">Run Prediction</button>
+                <button type="submit">Execute Prediction</button>
             </div>
         </div>
     </form>
@@ -290,7 +327,7 @@ HTML_TEMPLATE = """
         
         const resultDiv = document.getElementById('result');
         resultDiv.className = ''; 
-        resultDiv.style.display = 'none';
+        resultDiv.classList.remove('show-result');
 
         try {
             const response = await fetch('/predict', {
@@ -301,14 +338,14 @@ HTML_TEMPLATE = """
             const result = await response.json();
             
             if (result.error) {
-                resultDiv.innerText = `Error: ${result.error}`;
+                resultDiv.innerText = `System Error: ${result.error}`;
                 resultDiv.classList.add('danger', 'show-result');
             } else {
-                resultDiv.innerText = `Prediction Output: ${result.prediction}`;
+                resultDiv.innerText = `Prediction Output Matrix: ${result.prediction}`;
                 resultDiv.classList.add('success', 'show-result');
             }
         } catch (error) {
-            resultDiv.innerText = "Error connecting to server.";
+            resultDiv.innerText = "Network failure: Unable to connect to inference server.";
             resultDiv.classList.add('danger', 'show-result');
         }
     });
@@ -344,3 +381,6 @@ def predict():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+if __name__ == '__main__':
+    app.run(debug=True)
