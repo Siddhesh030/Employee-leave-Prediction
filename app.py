@@ -5,44 +5,52 @@ from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
-# Fix: Dynamically resolve the absolute path to the root directory on Vercel
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR, "lrmodel.pkl
-")
+# robust paths resolver for Vercel's environment
+def load_model():
+    # Potential locations for the model file in Vercel environment
+    possible_paths = [
+        os.path.join(os.getcwd(), "lrmodel.pkl"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lrmodel.pkl"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "lrmodel.pkl"),
+        "/var/task/lrmodel.pkl"
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, "rb") as f:
+                    return pickle.load(f), None
+            except Exception as e:
+                return None, f"Failed to parse model file: {str(e)}"
+    
+    # If not found, return the path checked for debugging
+    return None, f"Model file not found. Checked paths: {', '.join(possible_paths)}"
 
-# Load the model safely
-if os.path.exists(MODEL_PATH):
-    try:
-        with open(MODEL_PATH, "rb") as f:
-            model = pickle.load(f)
-    except Exception as e:
-        model = None
-else:
-    model = None
+model, model_error = load_model()
 
-# Glassmorphism UI with animations
+# Elegant Glassmorphism Interface with Animations
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Model Prediction Dashboard</title>
+    <title>Predictive Analytics Dashboard</title>
     <style>
         :root {
             --bg-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            --card-bg: rgba(255, 255, 255, 0.07);
-            --card-border: rgba(255, 255, 255, 0.1);
-            --text-color: #f8f9fa;
+            --card-bg: rgba(255, 255, 255, 0.06);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-color: #f1f5f9;
             --accent-color: #00f2fe;
-            --accent-gradient: linear-gradient(45deg, #4facfe, #00f2fe);
+            --accent-gradient: linear-gradient(45deg, #00c6ff, #0072ff);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
         body {
@@ -52,29 +60,29 @@ HTML_TEMPLATE = """
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            overflow-x: hidden;
+            padding: 24px;
         }
 
         .container {
             background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--card-border);
             padding: 40px;
-            border-radius: 20px;
+            border-radius: 24px;
             width: 100%;
-            max-width: 700px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            animation: fadeInUp 0.8s ease-out;
+            max-width: 680px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            animation: fadeInScale 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         h2 {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
+            font-size: 1.8rem;
             font-weight: 600;
-            letter-spacing: 1px;
-            background: var(--accent-gradient);
+            letter-spacing: 0.5px;
+            background: linear-gradient(45deg, #e0f2fe, #38bdf8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -82,11 +90,10 @@ HTML_TEMPLATE = """
         .grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            justify-content: center;
+            gap: 24px;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 580px) {
             .grid {
                 grid-template-columns: 1fr;
             }
@@ -99,39 +106,40 @@ HTML_TEMPLATE = """
 
         label {
             font-size: 0.85rem;
+            font-weight: 500;
             margin-bottom: 8px;
-            color: #cbd5e1;
+            color: #94a3b8;
         }
 
         input, select {
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            color: white;
-            font-size: 1rem;
-            transition: all 0.3s ease;
+            padding: 12px 16px;
+            background: rgba(15, 32, 39, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.95rem;
+            transition: all 0.25s ease;
             outline: none;
         }
 
         input:focus, select:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
-            background: rgba(255, 255, 255, 0.1);
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+            background: rgba(15, 32, 39, 0.7);
         }
 
         select option {
-            background: #203a43;
-            color: white;
+            background: #1e293b;
+            color: #fff;
         }
 
         .btn-container {
             grid-column: span 2;
             text-align: center;
-            margin-top: 20px;
+            margin-top: 16px;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 580px) {
             .btn-container {
                 grid-column: span 1;
             }
@@ -139,65 +147,64 @@ HTML_TEMPLATE = """
 
         button {
             width: 100%;
-            max-width: 300px;
-            padding: 14px;
+            max-width: 280px;
+            padding: 14px 28px;
             border: none;
-            border-radius: 30px;
+            border-radius: 50px;
             background: var(--accent-gradient);
-            color: #0f2027;
-            font-size: 1.1rem;
-            font-weight: bold;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 114, 255, 0.3);
         }
 
         button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.5);
+            box-shadow: 0 6px 24px rgba(0, 114, 255, 0.5);
         }
 
         button:active {
-            transform: translateY(1px);
+            transform: translateY(0);
         }
 
         #result {
-            margin-top: 30px;
-            padding: 15px;
-            border-radius: 10px;
+            margin-top: 24px;
+            padding: 16px;
+            border-radius: 12px;
             text-align: center;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
             display: none;
             opacity: 0;
-            transition: opacity 0.5s ease;
         }
 
         .show-result {
             display: block !important;
-            animation: fadeIn 0.5s forwards;
+            animation: fadeIn 0.4s forwards;
         }
 
         .success {
-            background: rgba(46, 213, 115, 0.2);
-            border: 1px solid #2ed573;
-            color: #2ed573;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
         }
         
         .danger {
-            background: rgba(235, 77, 75, 0.2);
-            border: 1px solid #eb4d4b;
-            color: #eb4d4b;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #f87171;
         }
 
-        @keyframes fadeInUp {
+        @keyframes fadeInScale {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: scale(0.96) translateY(10px);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: scale(1) translateY(0);
             }
         }
 
@@ -317,7 +324,7 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     if model is None:
-        return jsonify({"error": f"Model file not found. Looking at: {MODEL_PATH}"}), 500
+        return jsonify({"error": model_error or "Model file not found on server context."}), 500
     
     try:
         data = request.json
