@@ -5,11 +5,11 @@ from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
-# Dynamically locate the pickle model file relative to the api/ directory
+# Fix: Dynamically resolve the absolute path to the root directory on Vercel
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "lrm model.pkl")
 
-# Load the model globally
+# Load the model safely
 if os.path.exists(MODEL_PATH):
     try:
         with open(MODEL_PATH, "rb") as f:
@@ -19,7 +19,7 @@ if os.path.exists(MODEL_PATH):
 else:
     model = None
 
-# Stunning modern UI with animations embedded directly inside app.py
+# Glassmorphism UI with animations
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -336,6 +336,3 @@ def predict():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-
-# Required mapping for Vercel serverless environment
-app.debug = True
