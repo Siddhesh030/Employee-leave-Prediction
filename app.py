@@ -5,25 +5,21 @@ from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
-# Dynamically find the absolute path of the current directory
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Change "model (3).pkl" here if your uploaded file has a different exact name
-MODEL_PATH = os.path.join(BASE_DIR, "model (3).pkl")
+# Dynamically locate the pickle model file relative to the api/ directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_PATH = os.path.join(BASE_DIR, "lrm model.pkl")
 
-# Load the pickle model safely with fallback logging
+# Load the model globally
 if os.path.exists(MODEL_PATH):
     try:
         with open(MODEL_PATH, "rb") as f:
             model = pickle.load(f)
-        print("--> Model loaded successfully!")
     except Exception as e:
-        print(f"--> Error loading model file: {e}")
         model = None
 else:
-    print(f"--> Critical Error: Model file not found at {MODEL_PATH}")
     model = None
 
-# HTML Template with CSS Styles and Animations
+# Stunning modern UI with animations embedded directly inside app.py
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -226,7 +222,7 @@ HTML_TEMPLATE = """
             
             <div class="input-group">
                 <label for="JoiningYear">Joining Year</label>
-                <input type="number" id="JoiningYear" name="JoiningYear" value="2024" required>
+                <input type="number" id="JoiningYear" name="JoiningYear" value="2026" required>
             </div>
 
             <div class="input-group">
@@ -320,7 +316,7 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     if model is None:
-        return jsonify({"error": f"Model file not found on server. Looking for: {os.path.basename(MODEL_PATH)}"}), 500
+        return jsonify({"error": f"Model file not found. Looking at: {MODEL_PATH}"}), 500
     
     try:
         data = request.json
@@ -341,5 +337,5 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# Required mapping for Vercel serverless environment
+app.debug = True
