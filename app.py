@@ -26,7 +26,7 @@ def load_model():
 
 model, model_error = load_model()
 
-# Advanced Glassmorphism Interface with Live Data Visualization
+# Advanced Glassmorphism Interface with Live Pie Data Visualization
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -73,7 +73,7 @@ HTML_TEMPLATE = """
             padding: 48px;
             border-radius: 28px;
             width: 100%;
-            max-width: 960px; /* Widened to fit the dashboard layout side-by-side */
+            max-width: 960px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             animation: slideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -98,7 +98,6 @@ HTML_TEMPLATE = """
             font-size: 0.95rem;
         }
 
-        /* Responsive Dashboard Layout Split */
         .dashboard-layout {
             display: grid;
             grid-template-columns: 1.2fr 1fr;
@@ -207,7 +206,6 @@ HTML_TEMPLATE = """
             filter: brightness(1.05);
         }
 
-        /* Visualization Panel styling */
         .visualization-panel {
             background: rgba(15, 23, 42, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -217,7 +215,7 @@ HTML_TEMPLATE = """
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 360px;
+            min-height: 380px;
         }
 
         .chart-placeholder {
@@ -228,7 +226,7 @@ HTML_TEMPLATE = """
 
         #result {
             width: 100%;
-            margin-top: 20px;
+            margin-top: 24px;
             padding: 16px;
             border-radius: 12px;
             text-align: center;
@@ -339,9 +337,9 @@ HTML_TEMPLATE = """
         <!-- Visualization Section -->
         <div class="visualization-panel">
             <div id="placeholderText" class="chart-placeholder">
-                Submit inputs to generate feature metric visualization mapping.
+                Submit inputs to generate feature distribution pie chart.
             </div>
-            <canvas id="metricsChart" style="display: none; max-width: 100%; max-height: 280px;"></canvas>
+            <canvas id="metricsChart" style="display: none; max-width: 100%; max-height: 260px;"></canvas>
             <div id="result"></div>
         </div>
     </div>
@@ -377,51 +375,63 @@ HTML_TEMPLATE = """
                 resultDiv.innerText = `Prediction Output Matrix: ${result.prediction}`;
                 resultDiv.classList.add('success', 'show-result');
                 
-                // Hide prompt text, show canvas element
                 placeholderText.style.display = 'none';
                 chartCanvas.style.display = 'block';
 
-                // Map form metrics safely to normalize on chart canvas scale
-                const chartDataVector = [
-                    (parseFloat(data.Education) + 1) * 3, 
-                    parseFloat(data.PaymentTier) * 3,
-                    (parseFloat(data.Age) / 10),
-                    (parseFloat(data.ExperienceInCurrentDomain) * 2),
-                    (parseFloat(data.EverBenched) + 1) * 4
+                // Process absolute values safely for clean distribution slices
+                const pieDataVector = [
+                    (parseFloat(data.Education) + 1), 
+                    parseFloat(data.PaymentTier),
+                    Math.max(1, parseFloat(data.ExperienceInCurrentDomain)),
+                    (parseFloat(data.EverBenched) + 1)
                 ];
 
-                // Render or clear/re-render standard analytics chart matrix
                 if (currentChart) {
                     currentChart.destroy();
                 }
 
+                // Initialize sleek theme matching Pie chart configuration
                 currentChart = new Chart(chartCanvas, {
-                    type: 'radar',
+                    type: 'pie',
                     data: {
-                        labels: ['Education Factor', 'Payment Weight', 'Age Multiplier', 'Domain Depth', 'Bench Status'],
+                        labels: ['Education Level', 'Payment Tier', 'Domain Experience', 'Bench Metrics'],
                         datasets: [{
-                            label: `Input Profile Vectors (Prediction: ${result.prediction})`,
-                            data: chartDataVector,
-                            fill: true,
-                            backgroundColor: 'rgba(56, 189, 248, 0.2)',
-                            borderColor: '#38bdf8',
-                            pointBackgroundColor: '#38bdf8',
-                            pointBorderColor: '#fff',
-                            pointHoverBackgroundColor: '#fff',
-                            pointHoverBorderColor: '#38bdf8'
+                            data: pieDataVector,
+                            backgroundColor: [
+                                'rgba(56, 189, 248, 0.7)',  /* Cyan-Accent */
+                                'rgba(129, 140, 248, 0.7)', /* Indigo-Purple */
+                                'rgba(16, 185, 129, 0.7)',  /* Success Green */
+                                'rgba(251, 146, 60, 0.7)'   /* Alert Orange */
+                            ],
+                            borderColor: [
+                                '#38bdf8',
+                                '#818cf8',
+                                '#10b981',
+                                '#fb923c'
+                            ],
+                            borderWidth: 1.5,
+                            hoverOffset: 12
                         }]
                     },
                     options: {
-                        scales: {
-                            r: {
-                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                                angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                                pointLabels: { color: '#94a3b8', font: { size: 10 } },
-                                ticks: { display: false }
-                            }
-                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
                         plugins: {
-                            legend: { labels: { color: '#f8fafc', font: { size: 11 } } }
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#94a3b8',
+                                    padding: 16,
+                                    font: { size: 11, weight: '500' }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                titleColor: '#f8fafc',
+                                bodyColor: '#cbd5e1',
+                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                borderWidth: 1
+                            }
                         }
                     }
                 });
