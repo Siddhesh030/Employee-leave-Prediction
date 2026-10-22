@@ -1,478 +1,483 @@
 import os
 import pickle
 import numpy as np
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# robust paths resolver for Vercel's environment
-def load_model():
-    possible_paths = [
-        os.path.join(os.getcwd(), "lrmodel.pkl"),
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lrmodel.pkl"),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "lrmodel.pkl"),
-        "/var/task/lrmodel.pkl"
-    ]
-    
-    for path in possible_paths:
-        if os.path.exists(path):
-            try:
-                with open(path, "rb") as f:
-                    return pickle.load(f), None
-            except Exception as e:
-                return None, f"Failed to parse model file: {str(e)}"
-    
-    return None, f"Model file not found. Checked paths: {', '.join(possible_paths)}"
+# Resolve path relative to current file for robust Vercel serverless execution
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "lr_model.pkl")
 
-model, model_error = load_model()
+model = None
+if os.path.exists(MODEL_PATH):
+    try:
+        with open(MODEL_PATH, "rb") as f:
+            model = pickle.load(f)
+    except Exception as err:
+        print(f"Error loading model: {err}")
 
-# Advanced Glassmorphism Interface with Live Pie Data Visualization
 HTML_TEMPLATE = """
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Predictive Analytics Dashboard</title>
-    <!-- Chart.js CDN -->
+    <title>RetainIQ | Enterprise Attrition Intelligence</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <style>
-        :root {
-            --bg-gradient: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%);
-            --card-bg: rgba(30, 41, 59, 0.4);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent: #38bdf8;
-            --accent-glow: rgba(56, 189, 248, 0.3);
-            --btn-gradient: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        }
-
         body {
-            background: var(--bg-gradient);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px 20px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
-
-        .container {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--card-border);
-            padding: 48px;
-            border-radius: 28px;
-            width: 100%;
-            max-width: 960px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: slideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
         }
-
-        .header-section {
-            text-align: center;
-            margin-bottom: 40px;
+        .dark .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
-
-        h2 {
-            font-size: 2.25rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            background: linear-gradient(to right, #ffffff, #cbd5e1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
+        .mesh-bg {
+            background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.1) 0px, transparent 50%);
         }
-
-        .subtitle {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
         }
-
-        .dashboard-layout {
-            display: grid;
-            grid-template-columns: 1.2fr 1fr;
-            gap: 40px;
-            align-items: start;
-        }
-
-        @media (max-width: 868px) {
-            .dashboard-layout {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 24px;
-        }
-
-        @media (max-width: 480px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            transition: color 0.2s ease;
-        }
-
-        .input-group:focus-within label {
-            color: var(--accent);
-        }
-
-        input, select {
-            padding: 14px 18px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 1rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            outline: none;
-            width: 100%;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px var(--accent-glow);
-            background: rgba(15, 23, 42, 0.8);
-        }
-
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
-            background-repeat: no-repeat;
-            background-position: right 16px center;
-            background-size: 16px;
-            padding-right: 40px;
-        }
-
-        select option {
-            background: #0f172a;
-            color: #fff;
-        }
-
-        .btn-container {
-            grid-column: span 2;
-            text-align: center;
-            margin-top: 12px;
-        }
-
-        @media (max-width: 480px) {
-            .btn-container {
-                grid-column: span 1;
-            }
-        }
-
-        button {
-            width: 100%;
-            padding: 16px 32px;
-            border: none;
-            border-radius: 14px;
-            background: var(--btn-gradient);
-            color: #fff;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 20px rgba(2, 132, 199, 0.4);
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 28px rgba(2, 132, 199, 0.6);
-            filter: brightness(1.05);
-        }
-
-        .visualization-panel {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 380px;
-        }
-
-        .chart-placeholder {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            text-align: center;
-        }
-
-        #result {
-            width: 100%;
-            margin-top: 24px;
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 1.1rem;
-            font-weight: 600;
-            display: none;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.4s ease;
-        }
-
-        .show-result {
-            display: block !important;
-            opacity: 1 !important;
-            transform: translateY(0) !important;
-        }
-
-        .success {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.25);
-            color: #34d399;
-        }
-        
-        .danger {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            color: #f87171;
-        }
-
-        @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 8px;
         }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen mesh-bg custom-scrollbar antialiased transition-colors duration-300">
 
-<div class="container">
-    <div class="header-section">
-        <h2>Predictive Analytics Engine</h2>
-        <div class="subtitle">Evaluate data distribution vectors and operational outputs in real-time</div>
-    </div>
-    
-    <div class="dashboard-layout">
-        <!-- Form Section -->
-        <form id="predictionForm">
-            <div class="grid">
-                <div class="input-group">
-                    <label for="Education">Education</label>
-                    <select id="Education" name="Education" required>
-                        <option value="0">Bachelors</option>
-                        <option value="1">Masters</option>
-                        <option value="2">PHD</option>
-                    </select>
+    <!-- Top Executive Navigation Bar -->
+    <nav class="sticky top-0 z-50 glass-card border-b border-slate-200/80 dark:border-slate-800/80 px-6 py-3.5 shadow-sm">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3.5">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+                    <i class="fa-solid fa-chart-line text-lg"></i>
                 </div>
-                
-                <div class="input-group">
-                    <label for="JoiningYear">Joining Year</label>
-                    <input type="number" id="JoiningYear" name="JoiningYear" value="2026" required>
-                </div>
-
-                <div class="input-group">
-                    <label for="City">City</label>
-                    <select id="City" name="City" required>
-                        <option value="0">Bangalore</option>
-                        <option value="1">Pune</option>
-                        <option value="2">New Delhi</option>
-                    </select>
-                </div>
-
-                <div class="input-group">
-                    <label for="PaymentTier">Payment Tier</label>
-                    <input type="number" id="PaymentTier" name="PaymentTier" min="1" max="3" value="3" required>
-                </div>
-
-                <div class="input-group">
-                    <label for="Age">Age</label>
-                    <input type="number" id="Age" name="Age" min="18" max="100" value="25" required>
-                </div>
-
-                <div class="input-group">
-                    <label for="Gender">Gender</label>
-                    <select id="Gender" name="Gender" required>
-                        <option value="0">Female</option>
-                        <option value="1">Male</option>
-                    </select>
-                </div>
-
-                <div class="input-group">
-                    <label for="EverBenched">Ever Benched</label>
-                    <select id="EverBenched" name="EverBenched" required>
-                        <option value="0">No</option>
-                        <option value="1">Yes</option>
-                    </select>
-                </div>
-
-                <div class="input-group">
-                    <label for="ExperienceInCurrentDomain">Domain Exp (Yrs)</label>
-                    <input type="number" id="ExperienceInCurrentDomain" name="ExperienceInCurrentDomain" min="0" value="2" required>
-                </div>
-
-                <div class="btn-container">
-                    <button type="submit">Execute Prediction</button>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg font-black tracking-tight text-slate-900 dark:text-white">Retain<span class="text-indigo-500">IQ</span></span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">Enterprise ML</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Workforce Departure Risk & Retention Engine</p>
                 </div>
             </div>
-        </form>
 
-        <!-- Visualization Section -->
-        <div class="visualization-panel">
-            <div id="placeholderText" class="chart-placeholder">
-                Submit inputs to generate feature distribution pie chart.
+            <div class="flex items-center gap-3">
+                <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Model Engine Active
+                </div>
+
+                <button id="themeToggle" title="Toggle Theme" class="p-2.5 rounded-xl bg-slate-200/70 dark:bg-slate-800/70 hover:bg-slate-300/70 dark:hover:bg-slate-700 transition text-slate-700 dark:text-amber-400 border border-slate-300/40 dark:border-slate-700/60 shadow-sm">
+                    <i id="themeIcon" class="fa-solid fa-moon text-sm"></i>
+                </button>
             </div>
-            <canvas id="metricsChart" style="display: none; max-width: 100%; max-height: 260px;"></canvas>
-            <div id="result"></div>
         </div>
-    </div>
-</div>
+    </nav>
 
-<script>
-    let currentChart = null;
-
-    document.getElementById('predictionForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
+    <!-- Main Workspace -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
         
-        const resultDiv = document.getElementById('result');
-        const placeholderText = document.getElementById('placeholderText');
-        const chartCanvas = document.getElementById('metricsChart');
-        
-        resultDiv.className = ''; 
-        resultDiv.classList.remove('show-result');
+        <!-- Header Banner -->
+        <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800/80 pb-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Employee Retention Analytics</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Simulate workforce attributes to assess probability of resignation versus retention in real-time.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400 font-medium">Algorithm: <strong class="text-slate-700 dark:text-slate-200">Logistic Regression (L-BFGS)</strong></span>
+            </div>
+        </div>
 
-        try {
-            const response = await fetch('/predict', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            if (result.error) {
-                resultDiv.innerText = `System Error: ${result.error}`;
-                resultDiv.classList.add('danger', 'show-result');
-            } else {
-                resultDiv.innerText = `Prediction Output Matrix: ${result.prediction}`;
-                resultDiv.classList.add('success', 'show-result');
+            <!-- Parameters Input Form -->
+            <section class="lg:col-span-5 flex flex-col">
+                <div class="glass-card rounded-2xl p-6 shadow-xl border border-slate-200/80 dark:border-slate-800/80">
+                    <div class="flex items-center justify-between pb-4 mb-5 border-b border-slate-200 dark:border-slate-800/80">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-sm font-semibold">
+                                <i class="fa-solid fa-sliders"></i>
+                            </span>
+                            <h2 class="text-base font-bold text-slate-900 dark:text-slate-100">Profile Parameters</h2>
+                        </div>
+                        <button type="button" id="resetBtn" class="text-xs text-slate-400 hover:text-indigo-500 transition font-medium">Reset</button>
+                    </div>
+
+                    <form id="predictionForm" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Education Degree</label>
+                                <select id="Education" name="Education" class="w-full bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                                    <option value="0">Bachelors (B.Tech/BS)</option>
+                                    <option value="1">Masters (M.Tech/MS)</option>
+                                    <option value="2">PHD</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Joining Year</label>
+                                <input type="number" id="JoiningYear" name="JoiningYear" value="2018" min="2012" max="2026" class="w-full bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Base Office Location</label>
+                                <select id="City" name="City" class="w-full bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                                    <option value="0">Bangalore</option>
+                                    <option value="1">Pune</option>
+                                    <option value="2">New Delhi</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Compensation Tier</label>
+                                <select id="PaymentTier" name="PaymentTier" class="w-full bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                                    <option value="1">Tier 1 (Executive / High)</option>
+                                    <option value="2">Tier 2 (Mid-Level)</option>
+                                    <option value="3" selected>Tier 3 (Entry / Standard)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Employee Age</label>
+                                <input type="number" id="Age" name="Age" value="28" min="18" max="65" class="w-full bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Gender</label>
+                                <select id="Gender" name="Gender" class="w-full bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                                    <option value="0">Male</option>
+                                    <option value="1">Female</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Ever Benchmarked/Benched</label>
+                                <select id="EverBenched" name="EverBenched" class="w-full bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                                    <option value="0">No (Continuous Billing)</option>
+                                    <option value="1">Yes (Benched Previously)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Domain Experience (Yrs)</label>
+                                <input type="number" id="ExperienceInCurrentDomain" name="ExperienceInCurrentDomain" value="3" min="0" max="30" class="w-full bg-slate-50 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                            </div>
+                        </div>
+
+                        <button type="submit" id="submitBtn" class="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/25 transition duration-200 flex items-center justify-center gap-2 group cursor-pointer active:scale-[0.99]">
+                            <i class="fa-solid fa-microchip text-sm group-hover:rotate-12 transition"></i>
+                            <span>Evaluate Retention Likelihood</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Diagnostic Readout & Dashboard -->
+            <section class="lg:col-span-7 flex flex-col gap-6">
                 
-                placeholderText.style.display = 'none';
-                chartCanvas.style.display = 'block';
+                <!-- Primary Verdict Card -->
+                <div id="verdictContainer" class="glass-card rounded-2xl p-6 shadow-xl border border-slate-200/80 dark:border-slate-800/80 transition-all duration-300">
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800/80">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Risk Assessment Analysis</span>
+                        <span id="riskBadge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                            Awaiting Evaluation
+                        </span>
+                    </div>
 
-                // Process absolute values safely for clean distribution slices
-                const pieDataVector = [
-                    (parseFloat(data.Education) + 1), 
-                    parseFloat(data.PaymentTier),
-                    Math.max(1, parseFloat(data.ExperienceInCurrentDomain)),
-                    (parseFloat(data.EverBenched) + 1)
-                ];
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                        <div class="flex items-center gap-4">
+                            <div id="statusIconBox" class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center text-2xl shrink-0 transition-colors">
+                                <i id="statusIcon" class="fa-solid fa-user-clock"></i>
+                            </div>
+                            <div>
+                                <h3 id="verdictTitle" class="text-xl md:text-2xl font-black text-slate-800 dark:text-white">Ready to Predict</h3>
+                                <p id="verdictDesc" class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">Adjust employee attributes on the left and trigger evaluation to display flight-risk probabilities.</p>
+                            </div>
+                        </div>
 
-                if (currentChart) {
-                    currentChart.destroy();
-                }
+                        <div class="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-slate-800 pt-3 sm:pt-0 sm:pl-6 shrink-0">
+                            <span class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Model Confidence</span>
+                            <span id="confidenceMetric" class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">--%</span>
+                        </div>
+                    </div>
+                </div>
 
-                // Initialize sleek theme matching Pie chart configuration
-                currentChart = new Chart(chartCanvas, {
-                    type: 'pie',
-                    data: {
-                        labels: ['Education Level', 'Payment Tier', 'Domain Experience', 'Bench Metrics'],
-                        datasets: [{
-                            data: pieDataVector,
-                            backgroundColor: [
-                                'rgba(56, 189, 248, 0.7)',  /* Cyan-Accent */
-                                'rgba(129, 140, 248, 0.7)', /* Indigo-Purple */
-                                'rgba(16, 185, 129, 0.7)',  /* Success Green */
-                                'rgba(251, 146, 60, 0.7)'   /* Alert Orange */
-                            ],
-                            borderColor: [
-                                '#38bdf8',
-                                '#818cf8',
-                                '#10b981',
-                                '#fb923c'
-                            ],
-                            borderWidth: 1.5,
-                            hoverOffset: 12
-                        }]
+                <!-- Visualization Hub -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card rounded-2xl p-5 shadow-xl border border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-indigo-500"></i> Probability Breakdown
+                        </h4>
+                        <div class="relative h-44 w-full flex items-center justify-center">
+                            <canvas id="probChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-5 shadow-xl border border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-purple-500"></i> Encoded Features Overview
+                        </h4>
+                        <div class="relative h-44 w-full flex items-center justify-center">
+                            <canvas id="featChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strategic HR Insights Card -->
+                <div class="glass-card rounded-2xl p-5 shadow-xl border border-slate-200/80 dark:border-slate-800/80">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-lightbulb text-amber-500"></i> Recommended Retention Strategy
+                    </h4>
+                    <p id="actionableAdvice" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Input employee parameters to generate personalized talent management and retention actions.
+                    </p>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // Theme Toggle Controller
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            themeIcon.className = isDark ? 'fa-solid fa-moon text-sm' : 'fa-solid fa-sun text-sm text-amber-500';
+            updateChartTheme(isDark);
+        });
+
+        // Initialize Chart.js
+        let probChart, featChart;
+
+        function initCharts() {
+            const ctxProb = document.getElementById('probChart').getContext('2d');
+            probChart = new Chart(ctxProb, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Retention Likelihood', 'Attrition Risk'],
+                    datasets: [{
+                        data: [50, 50],
+                        backgroundColor: ['#10b981', '#f43f5e'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: '#94a3b8' } }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    color: '#94a3b8',
-                                    padding: 16,
-                                    font: { size: 11, weight: '500' }
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                titleColor: '#f8fafc',
-                                bodyColor: '#cbd5e1',
-                                borderColor: 'rgba(255, 255, 255, 0.1)',
-                                borderWidth: 1
-                            }
-                        }
-                    }
-                });
-            }
-        } catch (error) {
-            resultDiv.innerText = "Network failure: Unable to connect to server context.";
-            resultDiv.classList.add('danger', 'show-result');
+                    cutout: '72%'
+                }
+            });
+
+            const ctxFeat = document.getElementById('featChart').getContext('2d');
+            featChart = new Chart(ctxFeat, {
+                type: 'bar',
+                data: {
+                    labels: ['Edu', 'Year', 'City', 'Tier', 'Age', 'Gend', 'Bench', 'Exp'],
+                    datasets: [{
+                        label: 'Value',
+                        data: [0, 2018, 0, 3, 28, 0, 0, 3],
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(148,163,184,0.1)' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
         }
-    });
-</script>
+
+        function updateChartTheme(isDark) {
+            const color = isDark ? '#94a3b8' : '#64748b';
+            if (probChart) {
+                probChart.options.plugins.legend.labels.color = color;
+                probChart.update();
+            }
+            if (featChart) {
+                featChart.options.scales.x.ticks.color = color;
+                featChart.options.scales.y.ticks.color = color;
+                featChart.update();
+            }
+        }
+
+        // Form Submit
+        const form = document.getElementById('predictionForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i> Calculating...';
+
+            const formData = new FormData(form);
+            const payload = {};
+            formData.forEach((val, key) => payload[key] = parseFloat(val));
+
+            try {
+                const res = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    const verdictTitle = document.getElementById('verdictTitle');
+                    const verdictDesc = document.getElementById('verdictDesc');
+                    const statusIconBox = document.getElementById('statusIconBox');
+                    const statusIcon = document.getElementById('statusIcon');
+                    const riskBadge = document.getElementById('riskBadge');
+                    const confidenceMetric = document.getElementById('confidenceMetric');
+                    const advice = document.getElementById('actionableAdvice');
+
+                    const stayProb = (data.probabilities[0] * 100).toFixed(1);
+                    const leaveProb = (data.probabilities[1] * 100).toFixed(1);
+
+                    if (data.prediction === 0) {
+                        verdictTitle.innerText = "Employee Retained";
+                        verdictTitle.className = "text-xl md:text-2xl font-black text-emerald-600 dark:text-emerald-400";
+                        verdictDesc.innerText = "High stability profile. The employee shows consistent alignment with existing tenure metrics.";
+                        
+                        statusIconBox.className = "w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-2xl shrink-0";
+                        statusIcon.className = "fa-solid fa-user-check";
+
+                        riskBadge.innerText = "Low Attrition Risk";
+                        riskBadge.className = "px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
+
+                        confidenceMetric.innerText = `${stayProb}%`;
+                        advice.innerHTML = "<strong>Recommended Action:</strong> Standard appraisal cycle applies. Maintain recurring 1-on-1 check-ins and recognize recent contributions to preserve high engagement.";
+                    } else {
+                        verdictTitle.innerText = "High Flight Risk";
+                        verdictTitle.className = "text-xl md:text-2xl font-black text-rose-600 dark:text-rose-400";
+                        verdictDesc.innerText = "Heightened probability of resignation. Critical retention interventions are strongly advised.";
+                        
+                        statusIconBox.className = "w-16 h-16 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center text-2xl shrink-0";
+                        statusIcon.className = "fa-solid fa-user-xmark";
+
+                        riskBadge.innerText = "High Attrition Risk";
+                        riskBadge.className = "px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20";
+
+                        confidenceMetric.innerText = `${leaveProb}%`;
+                        advice.innerHTML = "<strong>Recommended Action:</strong> Immediate compensation & tier benchmarking recommended. Schedule career-pathing discussion, review billing/bench history, and evaluate domain workload.";
+                    }
+
+                    probChart.data.datasets[0].data = [stayProb, leaveProb];
+                    probChart.update();
+
+                    featChart.data.datasets[0].data = Object.values(payload);
+                    featChart.update();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Connection failure to prediction server.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-microchip text-sm group-hover:rotate-12 transition"></i> <span>Evaluate Retention Likelihood</span>';
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            form.reset();
+        });
+
+        window.addEventListener('DOMContentLoaded', initCharts);
+    </script>
 </body>
 </html>
 """
 
 @app.route('/')
-def home():
+def index():
     return render_template_string(HTML_TEMPLATE)
 
 @app.route('/predict', methods=['POST'])
 def predict():
     if model is None:
-        return jsonify({"error": model_error or "Model file not found on server context."}), 500
-    
+        return jsonify({
+            'success': False, 
+            'error': 'Logistic Regression model (lr_model.pkl) was not found or could not be loaded.'
+        }), 500
+
     try:
-        data = request.json
-        features = [
-            float(data['Education']),
-            float(data['JoiningYear']),
-            float(data['City']),
-            float(data['PaymentTier']),
-            float(data['Age']),
-            float(data['Gender']),
-            float(data['EverBenched']),
-            float(data['ExperienceInCurrentDomain'])
+        data = request.get_json(force=True)
+        feature_order = [
+            'Education', 'JoiningYear', 'City', 'PaymentTier',
+            'Age', 'Gender', 'EverBenched', 'ExperienceInCurrentDomain'
         ]
         
-        prediction = model.predict([features])[0]
-        return jsonify({"prediction": int(prediction)})
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        features = [float(data.get(feat, 0)) for feat in feature_order]
+        features_array = np.array([features])
 
-if __name__ == '__main__':
-    app.run(debug=True)
+        prediction = int(model.predict(features_array)[0])
+        probabilities = model.predict_proba(features_array)[0].tolist()
+
+        return jsonify({
+            'success': True,
+            'prediction': prediction,
+            'probabilities': probabilities
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+# Vercel needs the WSGI application object directly exposed
+app_handler = app
+
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)
